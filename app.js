@@ -11,6 +11,24 @@ const campsiteRouter = require("./routes/campsiteRouter");
 const partnerRouter = require("./routes/partnerRouter");
 const promotionRouter = require("./routes/promotionRouter");
 
+//require MONGOOSE
+const mongoose = require("mongoose");
+//url for MongoDB SERVER
+const url = "mongodb://localhost:27017/nucampsite";
+//set up connection to MongoDB SERVER...url & configs
+const connect = mongoose.connect(url, {
+  useCreateIndex: true,
+  useFindAndModify: false,
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+//handle PROMISE returned from .connect() METHOD. Also, we are handling the ERROR w/o .catch() METHOD bc we aren't chaining METHOD(just alt syntax here)
+connect.then(
+  () => console.log("Connected correctly to server.   "),
+  (err) => console.log(err)
+);
+
 var app = express();
 
 // view engine setup
