@@ -1,6 +1,7 @@
 var createError = require("http-errors");
 var express = require("express");
 var path = require("path");
+//import 'cookie-parser' MIDDLEWARE to parse COOKIES / process SIGNED COOKIES
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
@@ -38,35 +39,51 @@ app.set("view engine", "pug");
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser("5454548-54545-87891215a@rT5&8"));
+//use 'cookie-parser' MIDDLEWARE to process SIGNED COOKIES. passing a random KEY/SIGNATURE to encrypt the information
+
 //Implement CUSTOM AUTHENTICATION MIDDLEWARE vvv before we begin to route the REQUEST, or serve STATIC HTML PAGES. MIDDLEWARE runs in sequence parsing the request, adding to or TERMINATING the RESPONSE
 function auth(req, res, next) {
-  console.log(req.headers);
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    const err = new Error("You are not authenticated!");
-    res.setHeader("WWW-Authenticate", "Basic");
-    err.status = 401;
-    return next(err);
-  }
+  // console.log(req.headers);
 
-  const auth = Buffer.from(authHeader.split(" ")[1], "base64")
-    .toString()
-    .split(":");
-  const user = auth[0];
-  const pass = auth[1];
-  if (user === "admin" && pass === "password") {
-    return next(); // authorized
+  //.signedCookie PROPERTY of the REQUEST OBJECT(.req). if COOKIE is not properly SIGNED, returns VALUE of FALSE. The .user PROPERTY is added by us(CUSTOM)
+  if (!req.signedCookies.user) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      const err = new Error("You are not authenticated!");
+      res.setHeader("WWW-Authenticate", "Basic");
+      err.status = 401;
+      return next(err);
+    }
+
+    const auth = Buffer.from(authHeader.split(" ")[1], "base64")
+      .toString()
+      .split(":");
+    const user = auth[0];
+    const pass = auth[1];
+    if (user === "admin" && pass === "password") {
+      res.cookie("user", "admin", { signed: true });
+      //res.cookie() uses EXPRESS's .res OBJECT's API to create a SIGNED COOKIE OBJECT with the name we will use('user'): COOKIE : {'user':'admin', signed:true} tells EXPRESS to use the SECRET KEY from 'cookie-parser' MIDDLEWARE^^^^
+      return next(); // authorized
+    } else {
+      const err = new Error("You are not authenticated!");
+      res.setHeader("WWW-Authenticate", "Basic");
+      err.status = 401;
+      return next(err);
+    }
   } else {
-    const err = new Error("You are not authenticated!");
-    res.setHeader("WWW-Authenticate", "Basic");
-    err.status = 401;
-    return next(err);
+    if (req.signedCookies.user === "admin") {
+      return next();
+    } else {
+      const err = new Error("You are not authenticated.");
+      err.status = 401; //FORBIDDEN
+      return next(err);
+    }
   }
 }
 
 app.use(auth);
-//end of BASIC AUTHENTICATION, this will serve the STATIC PAGES(index, aboutus).
+//end of BASIC AUTHENTICATION, this will serve the STATIC PAGES(./public/index, aboutus).
 app.use(express.static(path.join(__dirname, "public")));
 
 app.use("/", indexRouter);
@@ -80,8 +97,7 @@ app.use("/promotions", promotionRouter);
 app.use(function (req, res, next) {
   next(createError(404));
 });
-//*** */ console.warn("look at error handler function")??? NOT SHOWING ERROR IN CHROME, 401 FORBIDDEN  in CONSOLE;*****
-// error handler
+
 app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
