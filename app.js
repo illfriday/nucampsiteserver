@@ -63,33 +63,33 @@ function auth(req, res, next) {
   //.signedCookie PROPERTY of the REQUEST OBJECT(.req). if COOKIE is not properly SIGNED, returns VALUE of FALSE. The .user PROPERTY is added by us(CUSTOM)
   // if (!req.signedCookies.user) {
   if (!req.session.user) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      const err = new Error("You are not authenticated!");
-      res.setHeader("WWW-Authenticate", "Basic");
-      err.status = 401;
-      return next(err);
-    }
+    // const authHeader = req.headers.authorization;
+    // if (!authHeader) {
+    const err = new Error("You are not authenticated!");
+    // res.setHeader("WWW-Authenticate", "Basic");
+    err.status = 401;
+    return next(err);
+    // }
 
-    const auth = Buffer.from(authHeader.split(" ")[1], "base64")
-      .toString()
-      .split(":");
-    const user = auth[0];
-    const pass = auth[1];
-    if (user === "admin" && pass === "password") {
-      // res.cookie("user", "admin", { signed: true });
-      //res.cookie() uses EXPRESS's .res OBJECT's API to create a SIGNED COOKIE OBJECT with the name we will use('user'): COOKIE : {'user':'admin', signed:true} tells EXPRESS to use the SECRET KEY from 'cookie-parser' MIDDLEWARE^^^^
-      req.session.user = "admin";
-      return next(); // authorized
-    } else {
-      const err = new Error("You are not authenticated!");
-      res.setHeader("WWW-Authenticate", "Basic");
-      err.status = 401;
-      return next(err);
-    }
+    // const auth = Buffer.from(authHeader.split(" ")[1], "base64")
+    //   .toString()
+    //   .split(":");
+    // const user = auth[0];
+    // const pass = auth[1];
+    // if (user === "admin" && pass === "password") {
+    //   // res.cookie("user", "admin", { signed: true });
+    //   //res.cookie() uses EXPRESS's .res OBJECT's API to create a SIGNED COOKIE OBJECT with the name we will use('user'): COOKIE : {'user':'admin', signed:true} tells EXPRESS to use the SECRET KEY from 'cookie-parser' MIDDLEWARE^^^^
+    //   req.session.user = "admin";
+    //   return next(); // authorized
+    // } else {
+    //   const err = new Error("You are not authenticated!");
+    //   res.setHeader("WWW-Authenticate", "Basic");
+    //   err.status = 401;
+    //   return next(err);
+    // }
   } else {
     //
-    if (req.session.user === "admin") {
+    if (req.session.user === "authenticated") {
       return next();
     } else {
       const err = new Error("You are not authenticated.");
@@ -98,13 +98,14 @@ function auth(req, res, next) {
     }
   }
 }
+//we have moved up the /(index) & /usersRouter before the .app.use(auth) so UNAUTHENTICATED users can create an account & be redirected to index when logged out
+app.use("/", indexRouter);
+app.use("/users", usersRouter);
 
 app.use(auth);
 //end of BASIC AUTHENTICATION, this will serve the STATIC PAGES(./public/index, aboutus).
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
-app.use("/users", usersRouter);
 //set up nucampsite routers
 app.use("/campsites", campsiteRouter);
 app.use("/partners", partnerRouter);
