@@ -8,6 +8,8 @@ var logger = require("morgan");
 const session = require("express-session");
 // ES6 1st CLASS FUNCTIONS allow us to CALL the REQUIRE FUNCTION from 'session' as a 2nd PARAMETER??
 const fileStore = require("session-file-store")(session);
+const passport = require("passport");
+const authenticate = require("./authenticate");
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
@@ -56,13 +58,17 @@ app.use(
     store: new fileStore(),
   })
 );
+
+//set-up PASSPORT SESSION-BASED AUTHENTICATION
+app.use(passport.initialize());
+app.use(passport.session());
 //Implement CUSTOM AUTHENTICATION MIDDLEWARE vvv before we begin to route the REQUEST, or serve STATIC HTML PAGES. MIDDLEWARE runs in sequence parsing the request, adding to or TERMINATING the RESPONSE
 function auth(req, res, next) {
-  console.log(req.session);
+  console.log(req.user);
 
   //.signedCookie PROPERTY of the REQUEST OBJECT(.req). if COOKIE is not properly SIGNED, returns VALUE of FALSE. The .user PROPERTY is added by us(CUSTOM)
   // if (!req.signedCookies.user) {
-  if (!req.session.user) {
+  if (!req.user) {
     // const authHeader = req.headers.authorization;
     // if (!authHeader) {
     const err = new Error("You are not authenticated!");
@@ -88,14 +94,15 @@ function auth(req, res, next) {
     //   return next(err);
     // }
   } else {
-    //
-    if (req.session.user === "authenticated") {
-      return next();
-    } else {
-      const err = new Error("You are not authenticated.");
-      err.status = 401; //FORBIDDEN
-      return next(err);
-    }
+    return next();
+    //***Update code to move on to next MIDDLEWARE if we have a SESSION for the USER^^^^^ */
+    // if (req.session.user === "authenticated") {
+    //   return next();
+    // } else {
+    //   const err = new Error("You are not authenticated.");
+    //   err.status = 401; //FORBIDDEN
+    //   return next(err);
+    // }
   }
 }
 //we have moved up the /(index) & /usersRouter before the .app.use(auth) so UNAUTHENTICATED users can create an account & be redirected to index when logged out
