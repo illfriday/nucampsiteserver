@@ -3,6 +3,9 @@ const express = require("express");
 //require the 'Campsite' MONGOOSE MODEL
 const Campsite = require("../models/campsite");
 //set up an instance of EXPRESS ROUTER. Gives us an OBJECT named 'campsiteRouter' that we can use with EXPRESS ROUTING METHODS
+//import AUTHENTICATE CUSTOM MIDDLEWARE from authenitcate.js
+const authenticate = require("../authenticate");
+
 const campsiteRouter = express.Router();
 
 campsiteRouter
@@ -14,7 +17,7 @@ campsiteRouter
   //   next();
   //   //pass control of application routing to next relevant ROUTING METHOD
   // })
-  //Next ROUTING METHOD handling GET REQUESTS, and so on...
+  // Next ROUTING METHOD handling GET REQUESTS, and so on...
   .get((req, res, next) => {
     //use .find() STATIC METHOD to query DB for all DOCS instantiated using the 'Campsites' MODEL, returning a PROMISE
     Campsite.find()
@@ -26,7 +29,7 @@ campsiteRouter
       // res.end("Will send all the campsites to you.");
       .catch((err) => next(err));
   })
-  .post((req, res, next) => {
+  .post(authenticate.verifyUser, (req, res, next) => {
     //create a new 'Campsite' DOCUMENT through the REQUEST BODY, returning a PROMISE
     Campsite.create(req.body)
       .then((campsite) => {
@@ -40,11 +43,11 @@ campsiteRouter
       // );
       .catch((err) => next(err));
   })
-  .put((req, res) => {
+  .put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end("PUT operation not supported on /campsites.");
   })
-  .delete((req, res, next) => {
+  .delete(authenticate.verifyUser, (req, res, next) => {
     // res.end("Deleting all campsites.");
     Campsite.deleteMany()
       .then((response) => {
@@ -72,13 +75,13 @@ campsiteRouter
       .catch((err) => next(err));
     // res.end(`Will send details of the campsite: ${req.params.campsiteId}`);
   })
-  .post((req, res) => {
+  .post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(
       `POST operation not supported on campsites/${req.params.campsiteId}`
     );
   })
-  .put((req, res, next) => {
+  .put(authenticate.verifyUser, (req, res, next) => {
     Campsite.findByIdAndUpdate(
       req.params.campsiteId,
       { $set: req.body },
@@ -95,7 +98,7 @@ campsiteRouter
     //   `Will update the campsite: ${req.body.name} with the description: ${req.body.description}`
     // );
   })
-  .delete((req, res, next) => {
+  .delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findByIdAndDelete(req.params.campsiteId)
       .then((response) => {
         res.statusCode = 200;
@@ -123,7 +126,7 @@ campsiteRouter
       })
       .catch((err) => next(err));
   })
-  .post((req, res, next) => {
+  .post(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite) {
@@ -144,13 +147,13 @@ campsiteRouter
       })
       .catch((err) => next(err));
   })
-  .put((req, res) => {
+  .put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(
       `PUT operation not supported on /campsites/${req.params.campsiteId}/comments`
     );
   })
-  .delete((req, res, next) => {
+  .delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite) {
@@ -195,13 +198,13 @@ campsiteRouter
       })
       .catch((err) => next(err));
   })
-  .post((req, res) => {
+  .post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(
       `POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`
     );
   })
-  .put((req, res, next) => {
+  .put(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
@@ -232,7 +235,7 @@ campsiteRouter
       })
       .catch((err) => next(err));
   })
-  .delete((req, res, next) => {
+  .delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite && campsite.comments.id(req.params.commentId)) {

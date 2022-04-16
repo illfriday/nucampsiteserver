@@ -2,6 +2,7 @@ const express = require("express");
 //import our 'user' MONGOOSE SCHEMA
 const User = require("../models/user");
 const passport = require("passport");
+const authenticate = require("../authenticate");
 
 const router = express.Router();
 
@@ -55,9 +56,14 @@ router.post("/sign-up", (req, res) => {
 
 //add the authenticate METHOD from PASSPORT
 router.post("/login", passport.authenticate("local"), (req, res) => {
+  const token = authenticate.getToken({ _id: req.user._id });
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json");
-  res.json({ success: true, status: "You are successfully logged in!" });
+  res.json({
+    success: true,
+    token: token,
+    status: "You are successfully logged in!",
+  });
 });
 //****re-write COOKIES/SESSION-BASED auth with PASSPORT-LOCAL, which will handle checking the username/password combo and handle any errors ^^^^^^^ */
 //   if (!req.session.user) {
@@ -75,7 +81,7 @@ router.post("/login", passport.authenticate("local"), (req, res) => {
 //     const username = auth[0];
 //     const password = auth[1];
 
-//     //Check the username and password that the USER/CLIENT is sending and check it against the DOCUMENTS in the 'Users' mongoDB COLLECTION. 1st, can we find a USER in the DB that matches the 'username' being sent to us as part of the CREDENTIALS in the REQUEST HEADERS? vvv   We are checking the 'username' field set up by our 'user'Schema bc it must be unique
+//     //Check the username and password that the USER/CLIENT is sending and check it against the DOCUMENTS in the 'Users' mongoDB COLLECTION. 1) find a USER in the DB that matches the 'username' being sent to us as part of the CREDENTIALS in the REQUEST HEADERS vvv  2)checking the 'username' field set up by our 'user'Schema bc it must be unique
 //     User.findOne({ username: username })
 //       .then((user) => {
 //         if (!user) {
