@@ -25,6 +25,20 @@ const opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = config.secretKey;
 
+exports.verifyAdmin = (req, res, next) => {
+  if (!req.user.admin) {
+    // res.statusCode = 200;
+    // res.setHeader('Content-Type', 'application/json')
+    // res.json(req.headers)
+    err = new Error('You are not an admin')
+    err.status = 403;
+    
+    return next(err);
+  } else {
+    return next();
+  }
+}
+
 exports.jwtPassport = passport.use(
   new JwtStrategy(opts, (jwt_payload, done) => {
     console.log('JWT payload:' ,jwt_payload);
@@ -41,3 +55,4 @@ exports.jwtPassport = passport.use(
 );
 
 exports.verifyUser = passport.authenticate('jwt', {session: false});
+// exports.verifyAdmin = passport.authenticate('jwt', {session: false});

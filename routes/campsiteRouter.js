@@ -30,7 +30,7 @@ campsiteRouter
       // res.end("Will send all the campsites to you.");
       .catch((err) => next(err));
   })
-  .post(authenticate.verifyUser, (req, res, next) => {
+  .post(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
     //create a new 'Campsite' DOCUMENT through the REQUEST BODY, returning a PROMISE
     Campsite.create(req.body)
       .then((campsite) => {
@@ -48,7 +48,7 @@ campsiteRouter
     res.statusCode = 403;
     res.end("PUT operation not supported on /campsites.");
   })
-  .delete(authenticate.verifyUser, (req, res, next) => {
+  .delete(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
     // res.end("Deleting all campsites.");
     Campsite.deleteMany()
       .then((response) => {
@@ -83,7 +83,7 @@ campsiteRouter
       `POST operation not supported on campsites/${req.params.campsiteId}`
     );
   })
-  .put(authenticate.verifyUser, (req, res, next) => {
+  .put(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
     Campsite.findByIdAndUpdate(
       req.params.campsiteId,
       { $set: req.body },
@@ -100,7 +100,7 @@ campsiteRouter
     //   `Will update the campsite: ${req.body.name} with the description: ${req.body.description}`
     // );
   })
-  .delete(authenticate.verifyUser, (req, res, next) => {
+  .delete(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
     Campsite.findByIdAndDelete(req.params.campsiteId)
       .then((response) => {
         res.statusCode = 200;
@@ -157,7 +157,7 @@ campsiteRouter
       `PUT operation not supported on /campsites/${req.params.campsiteId}/comments`
     );
   })
-  .delete(authenticate.verifyUser, (req, res, next) => {
+  .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite) {
@@ -213,12 +213,13 @@ campsiteRouter
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
-          if (req.body.rating) {
-            campsite.comments.id(req.params.campsiteId).rating =
+          if ((campsite.comments.id(req.params.commentId).author._id).equals(req.user._id)) {
+            if (req.body.rating) {
+            campsite.comments.id(req.params.commentId).rating =
               req.body.rating;
           }
           if (req.body.text) {
-            campsite.comments.id(req.params.campsiteId).text = req.body.text;
+            campsite.comments.id(req.params.commentId).text = req.body.text;
           }
           campsite
             .save()
@@ -228,6 +229,12 @@ campsiteRouter
               res.json(campsite);
             })
             .catch((err) => next(err));
+          } else {
+            const err = new Error('You are not the author of this comment');
+            err.status = 403;
+            return next(err);
+          }
+          
         } else if (!campsite) {
           err = new Error(`Campsite ${req.params.campsiteId} not found.`);
           res.statusCode = 404;
@@ -244,7 +251,8 @@ campsiteRouter
     Campsite.findById(req.params.campsiteId)
       .then((campsite) => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
-          campsite.comments.id(req.params.commentId).remove();
+          if ((campsite.comments.id(req.params.commentId).author._id).equals(req.user._id)) {
+            campsite.comments.id(req.params.commentId).remove();
           campsite
             .save()
             .then((campsite) => {
@@ -253,6 +261,12 @@ campsiteRouter
               res.json(campsite);
             })
             .catch((err) => next(err));
+          } else {
+            const err = new Error('You are not the author of this comment');
+            err.status = 403;
+            return next(err);
+          }
+          
         } else if (!campsite) {
           err = new Error(`Campsite ${req.params.campsiteId} not found.`);
           res.statusCode = 404;
