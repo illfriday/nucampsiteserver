@@ -2,6 +2,7 @@
 const passport = require("passport");
 //import PASSPORT-LOCAL & set it as the AUTHENTICATION STRATEGY to store unames/pwords locally on SERVER-SIDE
 const LocalStrategy = require("passport-local").Strategy;
+const FacebookTokenStrategy = require('passport-facebook-token');
 //import our User SCHEMA
 const User = require("./models/user");
 const JwtStrategy = require("passport-jwt").Strategy;
@@ -56,3 +57,33 @@ exports.jwtPassport = passport.use(
 
 exports.verifyUser = passport.authenticate('jwt', {session: false});
 // exports.verifyAdmin = passport.authenticate('jwt', {session: false});
+exports.facebookPassport = passport.use(
+    new FacebookTokenStrategy(
+        {
+            clientID: config.facebook.clientId,
+            clientSecret: config.facebook.clientSecret
+        }, 
+        (accessToken, refreshToken, profile, done) => {
+            User.findOne({facebookId: profile.id}, (err, user) => {
+                if (err) {
+                    return done(err, false);
+                }
+                if (!err && user) {
+                    return done(null, user);
+                } else {
+                    user = new User({ username: profile.displayName });
+                    user.facebookId = profile.id;
+                    user.firstname = profile.name.givenName;
+                    user.lastname = profile.name.familyName;
+                    user.save((err, user) => {
+                        if (err) {
+                            return done(err, false);
+                        } else {
+                            return done(null, user);
+                        }
+                    });
+                }
+            });
+        }
+    )
+);
